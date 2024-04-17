@@ -1,113 +1,184 @@
-import Image from "next/image";
+"use client"
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { getToken } from '@/app/lib/token';
+import "./window.css"
+import {enqueueSnackbar} from "notistack";
+import {closeButton} from "@/app/ui/action";
+
+interface button{
+    content: string
+}
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+    const token = getToken();
+    const [telegramLink, setTelegramLink] = useState<string | null>(null);
+    const [searchWindowOpened, setSearchWindowOpened] = useState(false);
+    const [messages, setMessages] = useState<object[]>([{
+        message: "Привет! Я - умный бот для поддержки. Моя задача - помочь вам с ответами на ваши вопросы и решением проблем. Если вам нужна помощь от оператора, просто напишите \"оператор\", и я передам ваш запрос специалисту. Надеюсь, что смогу быть полезным для вас!",
+        role: "support"
+    }]);
+    const [inputValue, setInputValue] = useState('');
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+    useEffect(() => {
+        if(token) {
+            axios.get("https://ts.geliusihe.ru/generate_link/", {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }).then(res => {
+                setTelegramLink(res.data.link);
+                console.log(res.data);
+            }).catch(error => {
+                // @ts-ignore
+                enqueueSnackbar(`Возникла ошибка: ${error.response.data.error}`, { closeButton,
+                    'variant': 'error',
+                    'className': "snackerror"
+                });
+            });
+        }
+    }, []);
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+    const sendMessage =  (messageText: string) => {
+        setMessages((prevMessages) => [...prevMessages, {message: messageText, role: "user"}])
+        const userMessage = messageText
+        setInputValue('')
+        axios.post('https://ts.geliusihe.ru/chat/init/', {message: userMessage}, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        })
+            .then(response => {
+                if(userMessage === "оператор" && response.data.message !== "Message successfully created"){
+                    setMessages((prevMessages) => [...prevMessages,
+                        {
+                            message: "Переводим вас на оператора. Ожидайте ответ",
+                            role: "support"
+                        }]);
+                }
+                else if(userMessage === "оператор" && response.data.message == "Message successfully created")
+                {
+                    setMessages((prevMessages) => [...prevMessages,
+                        {
+                            message: "Уже перевели вас на оператора, Ожидайте ответ!",
+                            role: "support"
+                        }]);
+                }
+                else if(userMessage !== "оператор" && response.data.message == "Message successfully created")
+                {
+                    setMessages((prevMessages) => [...prevMessages,
+                        {
+                            message: "Ваше сообщение будет доставлено оператору и рассмотренно, как только оператор освободится.",
+                            role: "support"
+                        }]);
+                }
+                else
+                {
+                    setMessages((prevMessages) => [...prevMessages,
+                        {
+                            message: JSON.parse(response.data.message).messageContent,
+                            button1: JSON.parse(response.data.message).button1,
+                            button2: JSON.parse(response.data.message).button2,
+                            button3: JSON.parse(response.data.message).button3,
+                            role: "support"
+                        }]);
+                }
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
+            })
+            .catch(error => {
+                setMessages((prevMessages) => [...prevMessages,
+                    {
+                        message: "Для того, что бы воспользоваться ботом, войдите или зарегестрируйтесь.",
+                        role: "support"
+                    }]);
+                // @ts-ignore
+                enqueueSnackbar(`Возникла ошибка: ${error.response.data.error}`, { closeButton, 'variant': 'error', 'className': "snackerror"});
+            })
+    }
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter') {
+            handleSendMessage();
+        }
+    };
+
+    const handleSendMessage = () => {
+        if (inputValue.trim() !== '') {
+            sendMessage(  inputValue );
+        }
+    };
+
+    function Message({ message }: { message: {message: string, role: string, button1: button, button2: button, button3: button} }) {
+
+        return (
+            <div className="flex flex-col gap-3  max-w-[50%] max-md:max-w-full">
+                <div className={`p-2 bg-white rounded-xl text-wrap basis-auto flex-grow-0 flex-shrink-0 ${message.role} `}>
+                    <p>{message.message}</p>
+                </div>
+                <div className="grid gap-3">
+                    {message.button1 && (
+                        <div className={`grid grid-cols-${message.button2 ? '2' : '1'} gap-3`}>
+                            {message.button1 && (
+                                <button onClick={() => sendMessage(message.button1.content)} className="rounded-xl bg-gray-100 p-2 text-center">
+                                    {message.button1.content}
+                                </button>
+                            )}
+                            {message.button2 && (
+                                <button onClick={() => sendMessage(message.button2.content)} className="rounded-xl bg-gray-100 p-2 text-center">
+                                    {message.button2.content}
+                                </button>
+                            )}
+                        </div>
+                    )}
+                    {message.button3 && (
+                        <button onClick={() => sendMessage(message.button3.content)} className="rounded-xl bg-gray-100 p-2 text-center col-span-full">
+                            {message.button3.content}
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <main className="w-full">
+            <div
+                className={`p-10 py-20 gap-5 bg-white w-full flex flex-col justify-between searchWindow ${searchWindowOpened && "!h-screen-minus-header !py-10"}`}
+            >
+                {searchWindowOpened && (
+                    <div className="w-full flex justify-end">
+                        <button className="p-1 px-2 bg-orange rounded-lg text-white " onClick={() => setSearchWindowOpened(false)}>╳</button>
+                    </div>
+                )}
+                <div className={`h-full flex flex-col w-full gap-2 custom-scrollbar !scroll-auto !overflow-y-scroll  ${!searchWindowOpened && "hidden"}`}>
+                    {messages.map((message, index) => (
+                        <Message key={index} message={message} />
+                    ))}
+                </div>
+                <div className="flex justify-between bg-white border rounded-xl">
+                    <input
+                        onFocus={() => setSearchWindowOpened(true)}
+                        type="text"
+                        className="w-full p-2 rounded-xl outline-none"
+                        placeholder="Задайте ваш вопрос..."
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                    />
+                    <button className="p-2" onClick={handleSendMessage}>
+                        <Image width={28} height={28} src="/send.svg" alt="Отправить" />
+                    </button>
+                </div>
+            </div>
+            <div className=" text-xl font-bold text-center flex items-center justify-center w-full gap-4 p-4 max-md:flex-col">
+                Хотите получить уведомление об ответе оператора?
+                <a href={telegramLink ? telegramLink : "/account/login"}>
+                    <Image width={200} height={44} src="/linkTG.svg" alt="Привязать телеграм" />
+                </a>
+            </div>
+        </main>
+    );
 }

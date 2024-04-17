@@ -1,5 +1,45 @@
+"use client"
+import axios from "axios";
+import { useEffect, useState } from "react";
+import { getToken } from "@/app/lib/token";
+import Link from "next/link";
+
+interface ticket{
+    id: number,
+    title: string,
+    description: string,
+    status: string,
+    created_at: string,
+    updated_at: string,
+    user: number,
+}
 export default function Page() {
+    const [tickets, setTickets] = useState<ticket[]>([])
+
+    useEffect(() => {
+        const token = getToken();
+        axios.get(
+            "https://ts.geliusihe.ru/tickets/",
+            { headers: { Authorization: `Bearer ${token}` } }
+        )
+            .then(res => setTickets(res.data))
+            .catch(error => {
+                console.error("Error fetching tickets:", error);
+            })
+    }, []);
+
     return (
-        <div>Page</div>
-    )
+        <div className="p-8">
+            <h1 className="text-xl mb-8">текущие обращения</h1>
+            <ul className="gap-3 flex flex-col ">
+                {tickets.map((ticket: ticket) => (
+                    <li className="p-3" key={ticket.id}>
+                        <a className="p-3 border rounded-xl w-max" href={`/support/ticket?id=${ticket.id}`}>
+                            #{ticket.id} {ticket.title}
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
 }

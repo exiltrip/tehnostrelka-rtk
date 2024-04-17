@@ -8,11 +8,22 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-conic":
-          "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+
+      colors: {
+        orange: 'rgba(255, 79, 18, 1)',
+        secondGray: 'rgba(243, 243, 244, 1)',
+        secondOrange: 'rgba(232, 78, 25, 0.8)',
+        lightOrange: 'rgba(255, 79, 18, 0.45)',
       },
+      height: {
+        'screen-minus-header': 'calc(100vh - 84px)',
+        'screen-minus-all': 'calc(100vh - 249px)',
+      },
+    },
+  },
+  variants: {
+    extend: {
+      animation: ['motion-safe'],
     },
   },
   plugins: [],

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Image from "next/image";
 
 const ScreenRecorder: React.FC = () => {
+    const [hidden, setHidden] = useState(true)
     const [recording, setRecording] = useState(false);
     const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
     const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
@@ -46,8 +47,9 @@ const ScreenRecorder: React.FC = () => {
     };
 
     return (
-        <div
-            className="fixed bottom-4 right-4 p-2 bg-gray-800 text-white rounded-lg shadow-md flex items-center space-x-4 z-50">
+        <>
+            <button onClick={() => setHidden(!hidden)}>Запись экрана</button>
+        <div className={`fixed bottom-4 right-4 p-2 bg-gray-800 text-white rounded-lg shadow-md flex items-center space-x-4 z-50 ${hidden ? "hidden" : ""}`}>
 
                 {recording ? (
                     <>
@@ -74,7 +76,8 @@ const ScreenRecorder: React.FC = () => {
 
 
         </div>
-    );
+        </>
+            );
 };
 
 export default ScreenRecorder;

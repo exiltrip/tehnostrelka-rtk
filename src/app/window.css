@@ -1,0 +1,26 @@
+.searchWindow{
+    height: 100%;
+    background: linear-gradient(95.1deg, rgba(255, 66, 0, 0.462) 1.66%, rgba(119, 0, 255, 0.3245) 98.37%);
+}
+.support{
+}
+.user{
+    background: linear-gradient(95deg, rgba(118, 0, 254, 0.81) 0%, #7600fe 100%) ;
+    color: white;
+}
+.custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

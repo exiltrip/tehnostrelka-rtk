@@ -14,37 +14,32 @@ interface ticket{
     user: number,
 }
 export default function Page() {
-  const [tickets, setTickets]: ticket[] = useState([]);
+    const [tickets, setTickets] = useState<ticket[]>([])
 
-  useEffect(() => {
-    const fetchTickets = async () => {
-      try {
+    useEffect(() => {
         const token = getToken();
-        const response = await axios.get(
+        axios.get(
             "https://ts.geliusihe.ru/tickets/",
             { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setTickets(response.data);
-      } catch (error) {
-        console.error("Error fetching tickets:", error);
-      }
-    };
+        )
+            .then(res => setTickets(res.data))
+            .catch(error => {
+                console.error("Error fetching tickets:", error);
+            })
+    }, []);
 
-    fetchTickets();
-  }, []);
-
-  return (
-      <div className="p-8">
-          <h1 className="text-xl mb-8">Ваши обращения</h1>
-        <ul className="gap-3 flex flex-col ">
-          {tickets.map((ticket) => (
-              <li className="p-3" key={ticket.id}>
-                <Link className="p-3 border rounded-xl w-max" href={`/ticket/${ticket.id}`}>
-                  {ticket.title}
-                </Link>
-              </li>
-          ))}
-        </ul>
-      </div>
-  );
+    return (
+        <div className="p-8">
+            <h1 className="text-xl mb-8">Ваши обращения</h1>
+            <ul className="gap-3 flex flex-col ">
+                {tickets.map((ticket: ticket) => (
+                    <li className="p-3" key={ticket.id}>
+                        <Link className="p-3 border rounded-xl w-max" href={`/account/ticket?id=${ticket.id}`}>
+                            #{ticket.id} {ticket.title}
+                        </Link>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
 }
